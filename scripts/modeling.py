@@ -401,9 +401,19 @@ normal_scenario["rainfall_anomaly"] = 0
 rainfall_shock_scenario = normal_scenario.copy()
 rainfall_shock_scenario["rainfall_anomaly"] = -1
 
+# Scenario 3: compound drought: below-normal rainfall and above-normal
+# temperature at the same time. All other predictors remain at each
+# district's historical average.
+compound_shock_scenario = normal_scenario.copy()
+compound_shock_scenario["rainfall_anomaly"] = -1
+compound_shock_scenario["temp_anomaly"] = 1
+
 # The random forest predicts log yield, so transform predictions to kg/ha.
 predicted_yield_normal = np.exp(rf_model.predict(normal_scenario))
 predicted_yield_shock = np.exp(rf_model.predict(rainfall_shock_scenario))
+predicted_yield_compound = np.exp(
+    rf_model.predict(compound_shock_scenario)
+)
 
 # Positive values mean a predicted yield loss after the rainfall shock.
 predicted_yield_loss_pct = (
@@ -411,12 +421,25 @@ predicted_yield_loss_pct = (
     / predicted_yield_normal
 ) * 100
 
+# Positive values mean a larger loss under the compound scenario than under
+# the rainfall-only scenario.
+predicted_yield_loss_compound_pct = (
+    (predicted_yield_normal - predicted_yield_compound)
+    / predicted_yield_normal
+) * 100
+
+compound_vs_rainfall_only_gap_pct = (
+    predicted_yield_loss_compound_pct - predicted_yield_loss_pct
+)
+
 # Create the requested district ranking.
 climate_sensitivity_ranking = pd.DataFrame({
     "district": district_profiles["Dist Name"],
     "state": district_profiles["State Name"],
     "irrigation_share": district_profiles["irrigation_share"],
     "predicted_yield_loss_pct": predicted_yield_loss_pct,
+    "predicted_yield_loss_compound_pct": predicted_yield_loss_compound_pct,
+    "compound_vs_rainfall_only_gap_pct": compound_vs_rainfall_only_gap_pct,
     "low_performing_cv_fold": district_profiles["Dist Name"].isin(
         low_performing_fold_districts
     ),
@@ -424,17 +447,22 @@ climate_sensitivity_ranking = pd.DataFrame({
 
 climate_sensitivity_ranking = (
     climate_sensitivity_ranking
-    .sort_values("predicted_yield_loss_pct", ascending=False)
+    .sort_values("predicted_yield_loss_compound_pct", ascending=False)
     .reset_index(drop=True)
 )
 
-print("\nDistrict rainfall-shock climate sensitivity ranking:")
+print("\nDistrict compound drought climate sensitivity ranking:")
 print(climate_sensitivity_ranking.round(3).to_string(index=False))
 
-# Optional: save the ranking for use in your report or later analysis.
+# Overwrite the existing ranking file with the compound-scenario columns.
 climate_sensitivity_ranking.to_csv(
     "data/processed/district_climate_sensitivity_ranking.csv",
     index=False
+)
+
+print(
+    "\nSaved updated ranking to "
+    "data/processed/district_climate_sensitivity_ranking.csv"
 )
 
 # ------------------------------------------------------------
@@ -462,3 +490,23 @@ state_sensitivity_summary = (
 
 print("\nState-level rainfall sensitivity summary:")
 print(state_sensitivity_summary.round(3).to_string(index=False))
+
+# Average additional loss from the compound scenario, by state.
+state_compound_gap_summary = (
+    climate_sensitivity_ranking
+    .groupby("state", as_index=False)
+    .agg(
+        average_compound_vs_rainfall_only_gap_pct=(
+            "compound_vs_rainfall_only_gap_pct", "mean"
+        ),
+        number_of_districts=("district", "nunique"),
+    )
+    .sort_values(
+        "average_compound_vs_rainfall_only_gap_pct",
+        ascending=False,
+    )
+    .reset_index(drop=True)
+)
+
+print("\nAverage additional loss from compound versus rainfall-only shock:")
+print(state_compound_gap_summary.round(3).to_string(index=False))
