@@ -1,0 +1,47 @@
+MODEL 1: Simple OLS
+                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:              log_yield   R-squared:                       0.702
+Model:                            OLS   Adj. R-squared:                  0.702
+Method:                 Least Squares   F-statistic:                     290.8
+Date:                Sat, 08 Aug 2026   Prob (F-statistic):           7.27e-49
+Time:                        05:16:13   Log-Likelihood:                -983.13
+No. Observations:                1990   AIC:                             1980.
+Df Residuals:                    1983   BIC:                             2019.
+Df Model:                           6                                         
+Covariance Type:              cluster                                         
+===========================================================================================
+                              coef    std err          z      P>|z|      [0.025      0.975]
+-------------------------------------------------------------------------------------------
+Intercept                   2.1573      0.358      6.023      0.000       1.455       2.859
+rainfall_anomaly            0.0690      0.014      4.913      0.000       0.041       0.097
+temp_anomaly               -0.0205      0.009     -2.217      0.027      -0.039      -0.002
+extreme_heat_anomaly        0.0160      0.010      1.614      0.107      -0.003       0.035
+dry_spell_anomaly          -0.0166      0.008     -2.002      0.045      -0.033      -0.000
+irrigation_share_filled     0.3922      0.075      5.224      0.000       0.245       0.539
+log_lagged_yield            0.6874      0.052     13.203      0.000       0.585       0.789
+==============================================================================
+Omnibus:                      319.181   Durbin-Watson:                   2.561
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):             1030.513
+Skew:                          -0.799   Prob(JB):                    1.69e-224
+Kurtosis:                       6.143   Cond. No.                         101.
+==============================================================================
+
+Notes:
+[1] Standard Errors are robust to cluster correlation (cluster)
+
+======================================================================
+
+MODEL 2: OLS with district + year fixed effects
+(showing only climate/irrigation coefficients below; full output has 70+ district dummies)
+
+                            Coef.  Std.Err.         z     P>|z|    [0.025    0.975]
+rainfall_anomaly         0.030065  0.009810  3.064804  0.002178  0.010838  0.049292
+temp_anomaly            -0.033641  0.011041 -3.047006  0.002311 -0.055280 -0.012002
+extreme_heat_anomaly     0.021288  0.012638  1.684402  0.092104 -0.003483  0.046059
+dry_spell_anomaly       -0.026569  0.008761 -3.032452  0.002426 -0.043741 -0.009397
+irrigation_share_filled  0.417152  0.155263  2.686740  0.007215  0.112842  0.721463
+log_lagged_yield         0.234029  0.084371  2.773808  0.005540  0.068665  0.399393
+
+R-squared: 0.8171
+N observations: 1990
