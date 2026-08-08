@@ -71,77 +71,6 @@ Sources:
 Raw climate grids are ignored by Git because of their size and are stored
 locally under yield/raw/climate/ when available.
 
-## Repository layout
-
-~~~text
-data/processed/
-  final_panel.csv
-  district_climate_sensitivity_ranking.csv
-  rice_yield_clean.csv
-  rice_irrigated_area_clean.csv
-outputs/
-  baseline_regression_results.txt
-  figures/
-    Figure_1.png
-    project_dashboard.png
-    project_dashboard.pdf
-    climate_sensitivity_ranking.png
-    climate_sensitivity_ranking.pdf
-scripts/
-  cleaning, climate aggregation, modeling, and visualization scripts
-yield/raw/
-  local source files and downloaded climate grids
-requirements.txt
-~~~
-
-## Environment setup
-
-The project uses Python 3.11 and the conda environment cropyield.
-
-~~~powershell
-conda create -n cropyield python=3.11
-conda activate cropyield
-pip install -r requirements.txt
-~~~
-
-Run scripts from the project root:
-
-~~~powershell
-cd C:\Users\rioth\OneDrive\Desktop\Test
-~~~
-
-The essential packages are pandas, numpy, scikit-learn, statsmodels,
-matplotlib, geopandas, xarray, netCDF4, imdlib, and shapely.
-
-## Reproducing the data pipeline
-
-Run this sequence from the project root:
-
-~~~powershell
-conda activate cropyield
-
-python scripts/clean_icrisat_rice.py
-python scripts/clean_icrisat_irrigation.py
-
-# Run only when IMD climate grids are not already present.
-python scripts/download_climate.py
-
-python scripts/aggregate_climate.py
-python scripts/fix_temperature.py
-python scripts/fix_remaining_temp.py
-python scripts/merge_irrigation.py
-python scripts/add_irrigation_share.py
-python scripts/baseline_regression.py
-python scripts/modeling.py
-python scripts/visualize_results.py
-python scripts/visualize_ranking.py
-~~~
-
-Some early data-preparation scripts contain local Windows path constants.
-Review those constants before rebuilding the panel on another machine.
-The modeling and ranking-visualization scripts use paths relative to the
-repository root when run as shown above.
-
 ## Modeling workflow
 
 The fitted models predict log(yield_kg_per_ha) using:
@@ -241,11 +170,3 @@ to change.
 
 The source data may use the state label Orissa; figures and presentation
 outputs rename it to Odisha.
-
-## License and citation
-
-This repository is a research-workflow archive. Add the preferred license,
-author information, and citation format before public release. When citing
-results, report the temporal split, missing-data treatment, and the fact that
-climate-sensitivity estimates are predictive scenarios rather than causal
-effects.
