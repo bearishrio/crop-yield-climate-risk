@@ -1,0 +1,184 @@
+\documentclass[11pt]{article}
+
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage{caption}
+
+\title{Climate Risk and Rice Yield Prediction across Districts in Maharashtra, Orissa, and Punjab}
+\author{Economics Research Project}
+\date{August 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This report evaluates machine-learning and fixed-effects approaches to predicting district-level rice yields using climate anomalies, irrigation, and lagged yields. The analysis covers an unbalanced panel of 74 districts in Maharashtra, Orissa, and Punjab from 1990--2019. A random forest produces the strongest out-of-sample performance for 2010--2019 and is used to construct a district-level rainfall-shock sensitivity ranking. The results show substantial heterogeneity in predicted sensitivity: largely irrigated Punjab districts exhibit near-zero average sensitivity to a one-standard-deviation rainfall deficit, whereas average predicted losses are approximately 19\% in Maharashtra and Orissa. These estimates are predictive scenario results, not causal treatment effects.
+\end{abstract}
+
+\section{Research question and data}
+
+The objective is to assess whether climate variables improve prediction of district-level rice yield risk and to identify districts whose predicted yields are most sensitive to an adverse rainfall shock. The cleaned panel contains 2,064 district-year observations covering 74 districts and the years 1990--2019. The outcome is rice yield in kg/ha. The modelling outcome is its natural logarithm.
+
+The predictors are rainfall anomaly, temperature anomaly, extreme-heat anomaly, dry-spell anomaly, irrigation share, and log lagged yield. The climate variables are standardized anomalies relative to each district's own baseline. Thus, a rainfall anomaly of $-1$ represents rainfall one district-specific standard deviation below normal.
+
+Missing irrigation-share observations in Maharashtra were coded as zero based on the project assumption that these districts are rainfed. The first available observation per district lacks a lagged yield; 74 such observations were removed. The final modelling sample therefore contains 1,990 observations. The 1991--2009 training sample contains 1,281 observations and the 2010--2019 test sample contains 709 observations.
+
+\section{Empirical design}
+
+The primary evaluation is a temporal holdout: models are trained on 1991--2009 and evaluated on 2010--2019. This design reflects the forecasting task more credibly than a random split, which could place adjacent years from the same district in both training and test data.
+
+The random forest uses 500 trees, a minimum of two observations per terminal leaf, a fixed random seed of 42, and all available processor cores. The comparator models are:
+
+\begin{enumerate}
+    \item a naive persistence benchmark: predicted current yield equals observed lagged yield;
+    \item an OLS model of log yield with the same covariates, district fixed effects, and year fixed effects; and
+    \item the random forest model.
+\end{enumerate}
+
+The OLS forecast requires a specific treatment of year fixed effects. District effects can be applied in the test period because every test district was observed in training. In contrast, coefficients for the unseen years 2010--2019 cannot be estimated without using test-period information. The forecast therefore uses the average estimated training-period year effect. This is a transparent forecasting assumption; it is not equivalent to using observed test-year fixed effects.
+
+\section{Predictive performance}
+
+Table~\ref{tab:performance} compares the three models on the same 2010--2019 test observations on the original kg/ha scale. The random forest has the highest test $R^2$ and the lowest RMSE. Relative to the naive benchmark, it lowers RMSE by approximately 46 kg/ha ($660.3 - 614.0$), indicating that the climate and irrigation predictors add predictive information beyond yield persistence.
+
+\begin{table}[H]
+\centering
+\caption{Out-of-sample performance, 2010--2019}
+\label{tab:performance}
+\begin{tabular}{lrr}
+\toprule
+Model & Test $R^2$ (kg/ha scale) & Test RMSE (kg/ha) \\
+\midrule
+OLS: district and year fixed effects & 0.691 & 688.034 \\
+Random forest & \textbf{0.754} & \textbf{614.005} \\
+Naive: current yield = lagged yield & 0.716 & 660.318 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+On the log-yield scale, the random forest obtains a training $R^2$ of 0.955 and a temporal test $R^2$ of 0.669. The difference indicates that the model fits historical training observations more closely than later data, so its results should be treated as predictive rather than as a fully stable structural relationship. The earlier full-sample fixed-effects $R^2$ of 0.817 is not directly comparable to the temporal holdout results because it includes in-sample observations and observed year effects.
+
+\section{Which predictors matter for prediction?}
+
+Random-forest impurity-based feature importance is reported in Table~\ref{tab:importance} and Figure~\ref{fig:importance}. Lagged yield dominates predictive importance (0.722), consistent with persistence in district yields. Irrigation share and rainfall anomaly are the next most useful predictors.
+
+\begin{table}[H]
+\centering
+\caption{Random-forest feature importances}
+\label{tab:importance}
+\begin{tabular}{lr}
+\toprule
+Feature & Importance \\
+\midrule
+Log lagged yield & 0.722 \\
+Irrigation share & 0.115 \\
+Rainfall anomaly & 0.067 \\
+Extreme-heat anomaly & 0.034 \\
+Dry-spell anomaly & 0.032 \\
+Temperature anomaly & 0.030 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.88\textwidth]{Figure_1.png}
+\caption{Random-forest feature importance for rice yield prediction.}
+\label{fig:importance}
+\end{figure}
+
+Feature importance measures how much a variable helped the model reduce prediction error across its decision trees. It does \emph{not} show the sign or size of a marginal effect, statistical significance, or causality. Correlated predictors can share importance, and the irrigation variable may partly proxy for state or data availability because Maharashtra's missing irrigation values were coded as zero.
+
+\section{Grouped cross-validation and external validity}
+
+To assess transferability across places, five-fold GroupKFold validation was performed within the training period, with districts kept entirely within either a training or validation fold. The fold-level log-yield $R^2$ values were 0.763, 0.821, 0.807, 0.316, and 0.889. The mean was 0.719 with a standard deviation of 0.206.
+
+The mean grouped-CV result is slightly higher than the future-period test $R^2$ of 0.669, but the large standard deviation shows strong variation in performance across groups of districts. The two evaluations answer different questions: the temporal split evaluates forecasting later years in known districts, whereas GroupKFold evaluates prediction in unseen districts.
+
+The lowest-performing fold ($R^2=0.316$) contained 15 districts: Aurangabad, Bhandara, Boudh, Cuttack, Gadchiroli, Gondia, Jalgaon, Jharsuguda, Kalahandi, Latur, Nasik, Nawarangpur, Pune, Sambalpur, and Solapur. It contained nine Maharashtra and six Orissa districts, no Punjab districts, and had lower mean irrigation and yield than the remaining training districts (Table~\ref{tab:hardfold}). This suggests reduced portability of the fitted relationships to predominantly rainfed, lower-yield production systems.
+
+\begin{table}[H]
+\centering
+\caption{Characteristics of the lowest-performing district-grouped validation fold}
+\label{tab:hardfold}
+\begin{tabular}{lrrr}
+\toprule
+Group & Districts & Mean irrigation share & Mean yield (kg/ha) \\
+\midrule
+Lowest-performing fold & 15 & 0.143 & 1,130.296 \\
+All other training districts & 59 & 0.446 & 2,016.120 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{District rainfall-shock sensitivity ranking}
+
+For each district, a model-based scenario was calculated from the fitted random forest. All predictors were fixed at their 1991--2009 district averages except rainfall anomaly. Predicted yield under normal rainfall ($0$) was compared with predicted yield under a one-standard-deviation negative rainfall anomaly ($-1$). The reported percentage loss is
+\[
+100 \times \frac{\widehat{Y}_{\text{normal}} - \widehat{Y}_{\text{rainfall shock}}}{\widehat{Y}_{\text{normal}}}.
+\]
+
+Table~\ref{tab:districts} reports the ten highest-ranked districts. A dagger marks districts in the lowest-performing grouped-CV fold; their rankings require added caution. The full machine-readable ranking is saved in \texttt{data/processed/district\_climate\_sensitivity\_ranking.csv}.
+
+\begin{table}[H]
+\centering
+\caption{Most rainfall-sensitive districts in the random-forest scenario}
+\label{tab:districts}
+\begin{tabular}{llrr}
+\toprule
+District & State & Mean irrigation share & Predicted yield loss (\%) \\
+\midrule
+Gondia$^\dagger$ & Maharashtra & 0.000 & 35.724 \\
+Nawarangpur$^\dagger$ & Orissa & 0.071 & 35.409 \\
+Dhenkanal & Orissa & 0.285 & 34.781 \\
+Jharsuguda$^\dagger$ & Orissa & 0.159 & 34.639 \\
+Nasik$^\dagger$ & Maharashtra & 0.000 & 34.576 \\
+Phulbani (Kandhamal) & Orissa & 0.243 & 32.712 \\
+Mayurbhanja & Orissa & 0.240 & 32.689 \\
+Nayagarh & Orissa & 0.273 & 31.991 \\
+Bolangir & Orissa & 0.212 & 31.498 \\
+Keonjhar & Orissa & 0.249 & 31.304 \\
+\bottomrule
+\multicolumn{4}{l}{\footnotesize $^\dagger$ District belongs to the lowest-performing GroupKFold validation fold.}
+\end{tabular}
+\end{table}
+
+\section{State-level patterns and economic interpretation}
+
+Table~\ref{tab:state} summarizes the full district ranking by state. Maharashtra and Orissa have similar average predicted losses of about 19\%, while Punjab has a near-zero average response and nearly universal irrigation. Several Punjab districts have small negative predicted losses; these should be read as model predictions near zero, not evidence that drought raises yields.
+
+\begin{table}[H]
+\centering
+\caption{State-level rainfall-shock sensitivity}
+\label{tab:state}
+\begin{tabular}{lrrrrr}
+\toprule
+State & Mean loss (\%) & Mean irrigation & Districts & Min loss (\%) & Max loss (\%) \\
+\midrule
+Maharashtra & 19.491 & 0.000 & 27 & 0.692 & 35.724 \\
+Orissa & 19.263 & 0.396 & 30 & 0.528 & 35.409 \\
+Punjab & -0.451 & 0.992 & 17 & -1.278 & 0.401 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The pattern is economically consistent with irrigation buffering rainfall risk: Punjab's high irrigation share coincides with very low predicted sensitivity to a rainfall deficit. However, Maharashtra and Orissa have almost the same average modelled loss despite different mean irrigation shares. This implies that irrigation alone does not explain climate sensitivity; local production systems, crop management, soils, climate exposure, and unobserved district characteristics may also be important.
+
+The results support targeting drought-risk preparedness toward highly ranked districts, especially where irrigation is limited. Potential policy responses include improving water-storage and irrigation reliability, promoting drought-tolerant varieties, improving seasonal climate information, and designing crop insurance or contingency support around districts with high predicted sensitivity. The ranking is best used as a prioritization and screening tool, not as a causal estimate of the payoff to irrigation investments or of the yield impact of rainfall.
+
+\section{Limitations and next steps}
+
+\begin{itemize}
+    \item The random forest is designed for prediction; its feature importances and scenario contrasts do not identify causal effects.
+    \item The rainfall scenarios hold other variables at historical averages. Actual droughts may jointly change temperature, heat, dry spells, and management responses.
+    \item The model's lower performance in one district group means that rankings for those flagged districts should be interpreted cautiously.
+    \item Coding missing irrigation values as zero is substantively consequential and should be validated where possible with external irrigation information.
+    \item A future extension could use repeated or state-balanced grouped cross-validation, permutation importance, partial-dependence analysis, and alternative rainfall-shock sizes.
+\end{itemize}
+
+\end{document}
